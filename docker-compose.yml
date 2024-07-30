@@ -1,0 +1,11 @@
+services:
+  app:
+    image: webdevops/php-nginx:8.3-alpine
+    volumes:
+      - .:/var/www/app
+    working_dir: /var/www/app
+    environment:
+      - WEB_DOCUMENT_ROOT=/var/www/app/public
+    ports:
+    - "8080:80"
+
