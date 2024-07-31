@@ -106,6 +106,10 @@
                         } 
 
                         if (response.status === 422) {
+                            if ("" !== data.message) {
+                                throw new Error(data.message);
+                            }
+
                             const errors = data.errors;
                             const errorMessages = [];
                             let errorList = document.createElement('ul');
