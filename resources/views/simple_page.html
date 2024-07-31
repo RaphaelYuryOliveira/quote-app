@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+        <h1>Get a quick quote</h1>
+        <form id="form">
+            <label for="age">Age:</label>
+            <input type="text" id="age" name="age" required>
+            <label for="currency">Currency:</label>
+            <select name="currency" id="currency" required>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="USD">USD</option>
+            </select>
+            <label for="start_date">Start date</label>
+            <input type="date" id="start_date" name="start_date">
+            <label for="end_date">End date</label>
+            <input type="date" id="end_date" name="end_date">
+            <button type="submit">Submit</button>
+        </form>
+        <p id="responseMessage"></p>
+
+
+        <script>
+            function validateToken() {
+                const token = localStorage.getItem('token');
+                const tokenExpiration = localStorage.getItem('token_expiration');
+            
+                if (null === token || null === tokenExpiration) {
+                    return false;
+                }
+            
+                if (tokenExpiration < new Date() / 1000) {
+                    return false;
+                }
+            
+                return true;
+            }
+
+            function createNewToken() {
+                return fetch('http://localhost:8080/api/token', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.status === 500) {
+                        return response.json().then(data => {
+                            const errorMessage = data.message || 'Please try again later';
+                            throw new Error(errorMessage);
+                        });
+                    }
+
+                    return response.json()
+                })
+                .then(data => {
+                    if (data.token) {
+                        const token = data.token;
+                        const tokenExpiration = data.expire_in;
+                    
+                        localStorage.setItem('token', token);
+                        localStorage.setItem('token_expiration', tokenExpiration);
+                    }
+                });
+            }
+
+            document.getElementById('form').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                async function handleSubmit() {
+                    try {
+
+                        if (false === validateToken()) {
+                            await createNewToken();
+                        }
+
+                        token = localStorage.getItem('token');
+                        const age = document.getElementById('age').value;
+                        const currency = document.getElementById('currency').value;
+                        const start_date = document.getElementById('start_date').value;
+                        const end_date = document.getElementById('end_date').value;
+                    
+                        const responseMessage = document.getElementById('responseMessage');
+                    
+                    
+                        const response = await fetch('http://localhost:8080/api/quotation', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                age: age,
+                                currency: currency,
+                                start_date: start_date,
+                                end_date: end_date
+                            })
+                        });
+                    
+                        const data = await response.json();
+                    
+                        if (response.status === 201) {
+                            responseMessage.textContent = `Total value: ${data.total}, Selected currency ${data.currency_id}, Quotation identifier ${data.quotation_id}`;
+                        } 
+
+                        if (response.status === 422) {
+                            const errors = data.errors;
+                            const errorMessages = [];
+                            let errorList = document.createElement('ul');
+                        
+                            for (const field in errors) {
+                                if (errors.hasOwnProperty(field)) {
+                                    errorMessages.push(...errors[field]);
+                                }
+                            }
+                        
+                            errorMessages.forEach(element => {
+                                let listItem = document.createElement('li');
+                                listItem.textContent = element;
+                                errorList.appendChild(listItem);
+                            });
+                        
+                            responseMessage.innerHTML = '';
+                            responseMessage.appendChild(errorList);
+                        }  
+                    } catch (error) {
+                        responseMessage.textContent = error.message;
+                    }
+                }
+            
+                handleSubmit();
+            });
+        </script>
+    </body>
+</html>
