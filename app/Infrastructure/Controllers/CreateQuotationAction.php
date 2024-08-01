@@ -7,6 +7,7 @@ namespace App\Infrastructure\Controllers;
 use App\Application\CreateQuotationHandler;
 use App\Domain\CreateQuotationCommand;
 use App\Domain\InvalidAgeException;
+use App\Domain\InvalidDateException;
 use App\Http\Controllers\Controller;
 use App\Infrastructure\Validation\CreateQuotationValidation;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +35,7 @@ class CreateQuotationAction extends Controller
                 $response->toArray(),
                 Response::HTTP_CREATED
             );
-        } catch(InvalidAgeException $exception) {
+        } catch(InvalidAgeException|InvalidDateException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);

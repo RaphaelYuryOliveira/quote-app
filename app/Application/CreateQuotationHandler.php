@@ -6,8 +6,10 @@ namespace App\Application;
 
 use App\Domain\AgeLoad;
 use App\Domain\CreateQuotationCommand;
+use App\Domain\InvalidDateException;
 use App\Domain\Quotation;
 use Carbon\Carbon;
+use Carbon\Exceptions\InvalidFormatException;
 
 class CreateQuotationHandler
 {
@@ -21,8 +23,12 @@ class CreateQuotationHandler
 
     public function handle(CreateQuotationCommand $command): Quotation
     {
-        $startDate = Carbon::createFromFormat('Y-m-d', $command->startDate);
-        $endDate = Carbon::createFromFormat('Y-m-d', $command->endDate);
+        try {
+            $startDate = Carbon::createFromFormat('Y-m-d', $command->startDate);
+            $endDate = Carbon::createFromFormat('Y-m-d', $command->endDate);
+        } catch (InvalidFormatException $exception) {
+            throw new InvalidDateException();
+        }
 
         $tripLength = $startDate->diffInDays($endDate) + self::FIRST_TRIP_DAY;
 
